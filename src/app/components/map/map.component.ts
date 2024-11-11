@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Loader } from '@googlemaps/js-api-loader';
 
 @Component({
   selector: 'app-map',
@@ -6,52 +7,97 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./map.component.css']
 })
 export class MapComponent implements OnInit {
+  apiLoaded: Promise<boolean>;
+  // Coordenadas de Lima, Perú
+  center = { lat: -12.0464, lng: -77.0428 }; 
+  // Nivel de zoom para ver todo el continente (puedes ajustarlo según lo que necesites)
+  zoom = 2; 
 
-  center: google.maps.LatLngLiteral = { lat: -12.0464, lng: -77.0428 }; // Centro en Lima, Perú
-  zoom = 5; // Ajusta el zoom para que abarque Perú y los alrededores
-
-  barcos = [
-    { lat: -13.1631, lng: -72.5450, name: 'Barco 1' },
-    { lat: 10.6700, lng: -61.5144, name: 'Barco 2' },
-    { lat: -34.6037, lng: -58.3816, name: 'Barco 3' },
+  markers = [
+    {
+      position: { lat: -12.0464, lng: -77.0428 },
+      title: 'Lima',
+      icon: {
+        url: 'assets/barco.png',
+        scaledSize: new google.maps.Size(50, 30),
+        anchor: new google.maps.Point(25, 25),
+      },
+    },
+    {
+      position: { lat: 48.8566, lng: 2.3522 }, // París
+      title: 'París',
+      icon: {
+        url: 'assets/barco.png',
+        scaledSize: new google.maps.Size(50, 30),
+        anchor: new google.maps.Point(25, 25),
+      },
+    },
+    {
+      position: { lat: 34.0522, lng: -118.2437 }, // Los Ángeles
+      title: 'Los Ángeles',
+      icon: {
+        url: 'assets/barco.png',
+        scaledSize: new google.maps.Size(50, 30),
+        anchor: new google.maps.Point(25, 25),
+      },
+    },
+    {
+      position: { lat: 38.7169, lng: -9.1399 }, // Lisboa, Portugal
+      title: 'Lisboa',
+      icon: {
+        url: 'assets/barco.png',
+        scaledSize: new google.maps.Size(50, 30),
+        anchor: new google.maps.Point(25, 25),
+      },
+    },
   ];
 
-  googleMap: google.maps.Map | undefined;
+  // Opciones para la primera línea: Lima -> Los Ángeles
+  polylineOptions1 = {
+    path: [
+      { lat: -12.0464, lng: -77.0428 }, // Lima
+      { lat: 34.0522, lng: -118.2437 }, // Los Ángeles
+    ],
+    geodesic: true,
+    strokeColor: '#00AAE4', // Color verde
+    strokeOpacity: 1.0,
+    strokeWeight: 2, // Línea más gruesa
+  };
 
-  constructor() { }
+  // Opciones para la segunda línea: Lima -> París
+  polylineOptions2 = {
+    path: [
+      { lat: -12.0464, lng: -77.0428 }, // Lima
+      { lat: 48.8566, lng: 2.3522 }, // París
+    ],
+    geodesic: true,
+    strokeColor: '#00AAE4', // Color verde
+    strokeOpacity: 1.0,
+    strokeWeight: 2, // Línea más gruesa
+  };
 
-  ngOnInit(): void {
-    // Inicializa el mapa centrado en Perú
-    this.initMap();
-    this.mostrarBarcos();
+  // Opciones para la tercera línea: Lima -> Lisboa
+  polylineOptions3 = {
+    path: [
+      { lat: -12.0464, lng: -77.0428 }, // Lima
+      { lat: 38.7169, lng: -9.1399 }, // Lisboa
+    ],
+    geodesic: true,
+    strokeColor: '#00AAE4', // Color verde
+    strokeOpacity: 1.0,
+    strokeWeight: 2, // Línea más gruesa
+  };
+
+  constructor() {
+    // Cargar la API de Google Maps
+    this.apiLoaded = new Loader({
+      apiKey: 'AIzaSyAd4TLUymnjQSC9fi-ctrcl80iFU51AkDk', // Reemplaza con tu propia clave de API
+      version: 'weekly',
+    })
+      .load()
+      .then(() => true)
+      .catch(() => false);
   }
 
-  initMap() {
-    this.googleMap = new google.maps.Map(document.getElementById('map') as HTMLElement, {
-      center: this.center,
-      zoom: this.zoom,
-    });
-  }
-
-  mostrarBarcos() {
-    this.barcos.forEach(barco => {
-      const marker = new google.maps.Marker({
-        position: { lat: barco.lat, lng: barco.lng },
-        title: barco.name,
-        map: this.googleMap, // Usa el mapa inicializado
-        icon: {
-          url: 'https://png.pngtree.com/png-vector/20190429/ourmid/pngtree-vector-boat-icon-png-image_997942.jpg',
-          scaledSize: new google.maps.Size(30, 30)
-        }
-      });
-
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<h3>${barco.name}</h3><p>Ubicación: ${barco.lat}, ${barco.lng}</p>`
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(this.googleMap, marker);
-      });
-    });
-  }
+  ngOnInit(): void {}
 }

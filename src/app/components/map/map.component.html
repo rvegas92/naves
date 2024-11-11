@@ -1,6 +1,22 @@
-<google-map 
-  height="500px" 
-  width="100%" 
-  [center]="center" 
-  [zoom]="zoom">
+<google-map
+  [height]="'500px'"
+  [width]="'100%'"
+  [center]="center"
+  [zoom]="zoom"
+>
+<map-marker
+*ngFor="let marker of markers"
+[position]="marker.position"
+[title]="marker.title"
+[icon]="marker.icon"
+></map-marker>
+<!-- Polyline -->
+<!-- Polyline para Lima -> Los Angeles -->
+<map-polyline [options]="polylineOptions1"></map-polyline>
+
+<!-- Polyline para Lima -> París -->
+<map-polyline [options]="polylineOptions2"></map-polyline>
+
+<!-- Polyline para Lima -> Lisboa -->
+<map-polyline [options]="polylineOptions3"></map-polyline>
 </google-map>

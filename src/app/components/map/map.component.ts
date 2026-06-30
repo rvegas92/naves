@@ -1,5 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Loader } from '@googlemaps/js-api-loader';
+import { environment } from 'src/environments/environment';
+import { MapService } from 'src/app/services/map.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-map',
@@ -7,97 +10,133 @@ import { Loader } from '@googlemaps/js-api-loader';
   styleUrls: ['./map.component.css']
 })
 export class MapComponent implements OnInit {
-  apiLoaded: Promise<boolean>;
-  // Coordenadas de Lima, Perú
-  center = { lat: -12.0464, lng: -77.0428 }; 
-  // Nivel de zoom para ver todo el continente (puedes ajustarlo según lo que necesites)
-  zoom = 2; 
 
-  markers = [
-    {
-      position: { lat: -12.0464, lng: -77.0428 },
-      title: 'Lima',
-      icon: {
-        url: 'assets/barco.png',
-        scaledSize: new google.maps.Size(50, 30),
-        anchor: new google.maps.Point(25, 25),
-      },
-    },
-    {
-      position: { lat: 48.8566, lng: 2.3522 }, // París
-      title: 'París',
-      icon: {
-        url: 'assets/barco.png',
-        scaledSize: new google.maps.Size(50, 30),
-        anchor: new google.maps.Point(25, 25),
-      },
-    },
-    {
-      position: { lat: 34.0522, lng: -118.2437 }, // Los Ángeles
-      title: 'Los Ángeles',
-      icon: {
-        url: 'assets/barco.png',
-        scaledSize: new google.maps.Size(50, 30),
-        anchor: new google.maps.Point(25, 25),
-      },
-    },
-    {
-      position: { lat: 38.7169, lng: -9.1399 }, // Lisboa, Portugal
-      title: 'Lisboa',
-      icon: {
-        url: 'assets/barco.png',
-        scaledSize: new google.maps.Size(50, 30),
-        anchor: new google.maps.Point(25, 25),
-      },
-    },
-  ];
+  // center = { lat: 0, lng: -30 };  // Centro del mapa para mostrar ambos puntos
+  // zoom = 3;
 
-  // Opciones para la primera línea: Lima -> Los Ángeles
-  polylineOptions1 = {
-    path: [
-      { lat: -12.0464, lng: -77.0428 }, // Lima
-      { lat: 34.0522, lng: -118.2437 }, // Los Ángeles
-    ],
-    geodesic: true,
-    strokeColor: '#00AAE4', // Color verde
-    strokeOpacity: 1.0,
-    strokeWeight: 2, // Línea más gruesa
-  };
+  // // Definición de los marcadores
+  // markers = [
+  //   { position: { lat: -12.0464, lng: -77.1187 }, label: '1', title: 'Punto 1' }, // Punto en Perú
+  //   { position: { lat: 51.509865, lng: -0.118092 }, label: '2', title: 'Punto 2' }  // Punto en Reino Unido
+  // ];
 
-  // Opciones para la segunda línea: Lima -> París
-  polylineOptions2 = {
-    path: [
-      { lat: -12.0464, lng: -77.0428 }, // Lima
-      { lat: 48.8566, lng: 2.3522 }, // París
-    ],
-    geodesic: true,
-    strokeColor: '#00AAE4', // Color verde
-    strokeOpacity: 1.0,
-    strokeWeight: 2, // Línea más gruesa
-  };
+  // // Definición de la ruta
+  // path = [
+  //   { lat: -12.0464, lng: -77.1187 },  // Punto de inicio en Perú
+  //   { lat: 8.538, lng: -79.882 },      // Paso intermedio en Panamá
+  //   { lat: 51.509865, lng: -0.118092 } // Punto de destino en Reino Unido
+  // ];
 
-  // Opciones para la tercera línea: Lima -> Lisboa
-  polylineOptions3 = {
-    path: [
-      { lat: -12.0464, lng: -77.0428 }, // Lima
-      { lat: 38.7169, lng: -9.1399 }, // Lisboa
-    ],
-    geodesic: true,
-    strokeColor: '#00AAE4', // Color verde
-    strokeOpacity: 1.0,
-    strokeWeight: 2, // Línea más gruesa
-  };
+  // // Opciones de la polilínea
+  // polylineOptions = {
+  //   strokeColor: '#0000FF',
+  //   strokeOpacity: 0.7,
+  //   strokeWeight: 3,
+  //   icons: [
+  //     {
+  //       icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 4 },
+  //       offset: '0',
+  //       repeat: '20px'  // Hace que la línea sea discontinua
+  //     }
+  //   ],
+  //   geodesic: true,  // Activa la curva geodésica
+  // };
+
+  private mapService = inject( MapService );
 
   constructor() {
-    // Cargar la API de Google Maps
     this.apiLoaded = new Loader({
-      apiKey: 'AIzaSyAd4TLUymnjQSC9fi-ctrcl80iFU51AkDk', // Reemplaza con tu propia clave de API
+      apiKey: environment.googleMapsApiKey,
       version: 'weekly',
-    })
-      .load()
-      .then(() => true)
-      .catch(() => false);
+    }).load().then(() => true).catch(() => false);
   }
 
-  ngOnInit(): void {}
+  apiLoaded: Promise<boolean>;
+  center = { lat: -12.0464, lng: -77.1187 }; 
+  zoom = 1.5; 
+
+  markers: any = []
+  polylines: any = []
+
+  ngOnInit(): void {
+    this.getContainer()
+  }
+
+  getContainer() {
+    this.mapService.obtenerContenedores({ fechadesde: '20241101', fechahasta: '20243112' }).subscribe(
+      async (resp)=> {
+        if(!!resp && resp.length) {
+          this.generarBarcos(resp[0].id)
+        }
+      }
+    );
+  }
+
+  generarBarcos(barcos: any) {
+    this.dibujarBarcos(barcos);
+  }
+
+  async dibujarBarcos(barcos: any) {
+    for (const e of barcos) {
+      const postcustom = {
+        authCode: environment.keyShipGo,
+        containerNumber: e.contenedor,
+        shippingLine: e.lineanaviera,
+        blContainersRef: e.booking
+      };
+  
+      const id = await this.mapService.obtenerRequestId(postcustom);
+  
+      if (!!id) {
+        const resp = await this.mapService.obtenerDataContainer({ authCode: environment.keyShipGo, requestId: id, mappoint: true });
+  
+        if (!!resp && resp.length > 0 && resp[0]?.VesselLatitude && resp[0]?.VesselLongitude) {
+          const geocoder = new google.maps.Geocoder();
+          const shanghaiCoordinates = await this.geocodeAddress(geocoder, resp[0]?.Pod);
+          const lima = { lat: -12.0464, lng: -77.1187 };
+          const currentCoordinates = { lat: resp[0]?.VesselLatitude, lng: resp[0]?.VesselLongitude };
+
+          const locations = [
+            lima,
+            currentCoordinates,
+            shanghaiCoordinates
+          ];
+  
+          locations.forEach((location, index) => {
+            const marker = {
+              position: location,
+              label: (index + 1).toString()
+            };
+            this.markers.push(marker);
+          });
+ 
+          const poli = {
+            path: [lima, currentCoordinates, shanghaiCoordinates],
+            geodesic: true,
+            strokeColor: 'blue',
+            strokeOpacity: 0.5,
+            strokeWeight: 0.5
+          };
+          this.polylines.push(poli);
+        }
+      }
+    }
+  }
+
+  geocodeAddress(geocoder: any, address: string) {
+    return new Promise<{ lat: number, lng: number }>((resolve, reject) => {
+      geocoder.geocode({ address: address }, (results: any, status: any) => {
+        if (status === "OK") {
+          const location = results[0].geometry.location;
+          resolve({
+            lat: location.lat(),
+            lng: location.lng()
+          });
+        } else {
+          reject("Geocoding falló por: " + status);
+        }
+      });
+    });
+  }
+
 }

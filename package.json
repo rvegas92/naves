@@ -21,6 +21,7 @@
     "@angular/router": "^16.1.0",
     "@googlemaps/js-api-loader": "^1.16.8",
     "rxjs": "~7.8.0",
+    "sweetalert2": "^11.14.5",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"
   },

@@ -52,24 +52,159 @@ export class MapComponent implements OnInit {
   }
 
   apiLoaded: Promise<boolean>;
-  center = { lat: -12.0464, lng: -77.1187 }; 
-  zoom = 1.5; 
+  center = { lat: -12.0464, lng: -77.1187 };
+  zoom = 1.5;
 
   markers: any = []
   polylines: any = []
 
+  fechaDesde: string = '';
+  fechaHasta: string = '';
+
+  barcos: any[] = [];
+  totalBarcos: number = 0;
+  barcosEnTransito: number = 0;
+  barcosEntregados: number = 0;
+
+  showModal: boolean = false;
+  selectedStat: any = null;
+
+  panelFiltrosOpen: boolean = true;
+  panelEmbarquesOpen: boolean = true;
+
+  pageSize: number = 20;
+  currentPage: number = 1;
+  totalPages: number = 1;
+
+  dashboardStats = [
+    { title: 'Total de Barcos', value: 0, icon: 'ship', color: '#1976d2', key: 'total' },
+    { title: 'Peso Bruto (kg)', value: 0, icon: 'weight', color: '#ff9800', key: 'pesobruto' },
+    { title: 'Peso Neto (kg)', value: 0, icon: 'weight', color: '#00bcd4', key: 'pesoneto' }
+  ];
+
   ngOnInit(): void {
-    this.getContainer()
+    this.initDates();
+    this.getContainer();
+  }
+
+  initDates(): void {
+    const hoy = new Date();
+    const hace7 = new Date();
+    hace7.setDate(hoy.getDate() - 7);
+    this.fechaHasta = this.toInputDate(hoy);
+    this.fechaDesde = this.toInputDate(hace7);
+  }
+
+  toInputDate(d: Date): string {
+    return d.toISOString().split('T')[0];
+  }
+
+  toApiDate(s: string): string {
+    const [y, m, d] = s.split('-');
+    return `${y}${m}${d}`;
+  }
+
+  onDateChange(): void {
+    this.markers = [];
+    this.polylines = [];
+    this.getContainer();
   }
 
   getContainer() {
-    this.mapService.obtenerContenedores({ fechadesde: '20241101', fechahasta: '20243112' }).subscribe(
-      async (resp)=> {
-        if(!!resp && resp.length) {
-          this.generarBarcos(resp[0].id)
+    this.mapService.obtenerContenedores({
+      fechadesde: this.toApiDate(this.fechaDesde),
+      fechahasta: this.toApiDate(this.fechaHasta)
+    }).subscribe(
+      async (resp) => {
+        if (!!resp && resp.length && resp[0].id) {
+          this.barcos = resp[0].id;
+          this.totalBarcos = this.barcos.length;
+          this.updateStats();
+          this.generarBarcos(this.barcos);
         }
       }
     );
+  }
+
+  parseEta(eta: string): Date | null {
+    if (!eta || eta.length !== 8) return null;
+    const y = +eta.slice(0, 4), m = +eta.slice(4, 6) - 1, d = +eta.slice(6, 8);
+    return new Date(y, m, d);
+  }
+
+  updateStats(): void {
+    let pesoNeto = 0, pesoBruto = 0;
+
+    for (const b of this.barcos) {
+      pesoNeto += b.pesoneto || 0;
+      pesoBruto += b.pesobruto || 0;
+    }
+
+    this.dashboardStats[0].value = this.totalBarcos;
+    this.dashboardStats[1].value = Math.round(pesoBruto);
+    this.dashboardStats[2].value = Math.round(pesoNeto);
+  }
+
+  getEstado(b: any): string {
+    const eta = this.parseEta(b.ETA);
+    if (!eta) return 'En Transito';
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    return eta >= hoy ? 'En Transito' : 'Entregado';
+  }
+
+  getEstadoCounts(): { transito: number, entregado: number } {
+    let transito = 0, entregado = 0;
+    for (const b of this.getBarcosFiltrados()) {
+      const estado = this.getEstado(b);
+      if (estado === 'En Transito') transito++;
+      else entregado++;
+    }
+    return { transito, entregado };
+  }
+
+  openModal(stat: any): void {
+    this.selectedStat = stat;
+    this.currentPage = 1;
+    this.calcTotalPages();
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.selectedStat = null;
+  }
+
+  calcTotalPages(): void {
+    const total = this.getBarcosFiltrados().length;
+    this.totalPages = Math.ceil(total / this.pageSize) || 1;
+  }
+
+  getPaginatedBarcos(): any[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.getBarcosFiltrados().slice(start, start + this.pageSize);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  togglePanel(panel: string): void {
+    if (panel === 'filtros') this.panelFiltrosOpen = !this.panelFiltrosOpen;
+    if (panel === 'embarques') this.panelEmbarquesOpen = !this.panelEmbarquesOpen;
+  }
+
+  getBarcosFiltrados(): any[] {
+    if (!this.selectedStat) return [];
+    return this.barcos;
+  }
+
+  getPageRange(): number[] {
+    const range: number[] = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(this.totalPages, this.currentPage + 2);
+    for (let i = start; i <= end; i++) range.push(i);
+    return range;
   }
 
   generarBarcos(barcos: any) {

@@ -1,21 +1,135 @@
-<google-map
-  [height]="'500px'"
-  [width]="'100%'"
-  [center]="center"
-  [zoom]="zoom"
-  id="map"
->
-<map-marker
-*ngFor="let marker of markers"
-[position]="marker.position"
-[label]="marker.label"
-[title]="marker.title"
-[icon]="marker.icon"
-></map-marker>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <!-- Filtros -->
+    <div class="panel">
+      <div class="panel-head toggle" (click)="togglePanel('filtros')">
+        <div class="head-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span>Filtros</span>
+        </div>
+        <svg class="chevron" [class.open]="panelFiltrosOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      <div class="panel-body" *ngIf="panelFiltrosOpen">
+        <div class="date-row">
+          <label>Desde</label>
+          <input type="date" [(ngModel)]="fechaDesde" (change)="onDateChange()" />
+        </div>
+        <div class="date-row">
+          <label>Hasta</label>
+          <input type="date" [(ngModel)]="fechaHasta" (change)="onDateChange()" />
+        </div>
+      </div>
+    </div>
 
-<map-polyline 
-  *ngFor="let polylineOptions of polylines"
-  [options]="polylineOptions">
-</map-polyline>
+    <!-- Dashboards Barcos -->
+    <div class="panel">
+      <div class="panel-head toggle" (click)="togglePanel('embarques')">
+        <div class="head-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span>Embarques</span>
+        </div>
+        <svg class="chevron" [class.open]="panelEmbarquesOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      <div class="panel-body" *ngIf="panelEmbarquesOpen">
+        <div class="dash-list">
+        <div class="dash-card" *ngFor="let s of dashboardStats" [style.--accent]="s.color" [class.no-click]="s.key === 'pesobruto' || s.key === 'pesoneto'" (click)="s.key === 'total' && openModal(s)">
+          <div class="dash-icon" [style.background]="s.color + '15'" [style.color]="s.color">
+            <svg *ngIf="s.icon === 'ship'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.7 5.6 1.8 7.8"/><path d="M14 8l-3.5-5"/><path d="M10 8l3.5-5"/><path d="M12 3v5"/></svg>
+            <svg *ngIf="s.icon === 'wave'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1"/><path d="M2 12c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1"/><path d="M2 18c2 0 3-1 5-1s3 1 5 1 3-1 5-1 3 1 5 1"/></svg>
+            <svg *ngIf="s.icon === 'check'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <svg *ngIf="s.icon === 'weight'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M6 20v-7a6 6 0 0 1 12 0v7"/></svg>
+          </div>
+          <div class="dash-info">
+            <div class="dash-value">{{ s.value | number:'1.0-0' }}</div>
+            <div class="dash-label">{{ s.title }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
 
-</google-map>
+  </aside>
+
+  <!-- Mapa -->
+  <main class="map-wrap">
+    <div class="map-inner">
+      <google-map [height]="'100%'" [width]="'100%'" [center]="center" [zoom]="zoom">
+        <map-marker *ngFor="let marker of markers" [position]="marker.position" [label]="marker.label" [title]="marker.title" [icon]="marker.icon"></map-marker>
+        <map-polyline *ngFor="let polylineOptions of polylines" [options]="polylineOptions"></map-polyline>
+      </google-map>
+    </div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-top" [style.border-bottom-color]="selectedStat?.color">
+      <h3>{{ selectedStat?.title }}</h3>
+      <button (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-stats-row">
+        <div class="stat-box transito">
+          <span class="stat-count">{{ getEstadoCounts().transito }}</span>
+          <span class="stat-name">En Transito</span>
+        </div>
+        <div class="stat-box entregado">
+          <span class="stat-count">{{ getEstadoCounts().entregado }}</span>
+          <span class="stat-name">Entregado</span>
+        </div>
+      </div>
+      <div class="modal-row"><span>Periodo</span><b>{{ fechaDesde }} / {{ fechaHasta }}</b></div>
+
+      <!-- Lista de embarques -->
+      <div class="barcos-table">
+        <table>
+          <thead>
+            <tr>
+              <th>RUC</th>
+              <th>Empresa</th>
+              <th>Embarque</th>
+              <th>Navio</th>
+              <th>Destino</th>
+              <th>ETA</th>
+              <th>Estado</th>
+              <th>Peso</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let b of getPaginatedBarcos()">
+              <td>{{ b.ruc }}</td>
+              <td>{{ b.razonsocial }}</td>
+              <td>{{ b.embarquenumero }}</td>
+              <td>{{ b.navenombre }}</td>
+              <td>{{ b.destino }}</td>
+              <td>{{ b.ETA | slice:6:8 }}/{{ b.ETA | slice:4:6 }}/{{ b.ETA | slice:0:4 }}</td>
+              <td>
+                <span class="badge" [class.transito]="getEstado(b) === 'En Transito'" [class.entregado]="getEstado(b) === 'Entregado'">
+                  {{ getEstado(b) }}
+                </span>
+              </td>
+              <td>{{ b.pesoneto | number:'1.0-0' }} kg</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginacion -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button class="page-num" *ngFor="let p of getPageRange()" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn-close" (click)="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>

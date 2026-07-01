@@ -12,13 +12,17 @@
       </div>
       <div class="panel-body" *ngIf="panelFiltrosOpen">
         <div class="date-row">
-          <label>Desde</label>
-          <input type="date" [(ngModel)]="fechaDesde" (change)="onDateChange()" />
+          <label>F. Embarque</label>
+          <input type="date" [(ngModel)]="fechaDesde" />
         </div>
         <div class="date-row">
-          <label>Hasta</label>
-          <input type="date" [(ngModel)]="fechaHasta" (change)="onDateChange()" />
+          <label>F. Llegada</label>
+          <input type="date" [(ngModel)]="fechaHasta" />
         </div>
+        <button class="btn-listar" (click)="onDateChange()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 12 9 12 13 8"/><polyline points="3 12 15 12 11 16"/></svg>
+          Listar
+        </button>
       </div>
     </div>
 
@@ -87,6 +91,9 @@
         <table>
           <thead>
             <tr>
+              <th class="chk-th">
+                <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll()" />
+              </th>
               <th>RUC</th>
               <th>Empresa</th>
               <th>Embarque</th>
@@ -98,7 +105,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let b of getPaginatedBarcos()">
+            <tr *ngFor="let b of getPaginatedBarcos()" [class.row-selected]="isSelected(b)">
+              <td class="chk-td">
+                <input type="checkbox" [checked]="isSelected(b)" (change)="toggleBarco(b)" />
+              </td>
               <td>{{ b.ruc }}</td>
               <td>{{ b.razonsocial }}</td>
               <td>{{ b.embarquenumero }}</td>
@@ -106,7 +116,7 @@
               <td>{{ b.destino }}</td>
               <td>{{ b.ETA | slice:6:8 }}/{{ b.ETA | slice:4:6 }}/{{ b.ETA | slice:0:4 }}</td>
               <td>
-                <span class="badge" [class.transito]="getEstado(b) === 'En Transito'" [class.entregado]="getEstado(b) === 'Entregado'">
+                <span class="badge" [class.transito]="getEstado(b) === 'En Transito'" [class.entregado]="getEstado(b) === 'Entregado'" [class.pendiente]="getEstado(b) === 'Pendiente'">
                   {{ getEstado(b) }}
                 </span>
               </td>

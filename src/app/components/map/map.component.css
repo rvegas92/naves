@@ -103,6 +103,32 @@
   background: #fff;
 }
 
+.btn-listar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #1976d2;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-listar:hover {
+  background: #1565c0;
+}
+
+.btn-listar:active {
+  background: #0d47a1;
+}
+
 /* ===== Dashboard Cards ===== */
 .dash-list {
   display: flex;
@@ -363,6 +389,26 @@
 
 .barcos-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.barcos-table tbody tr.row-selected {
+  background: #e3f2fd;
+}
+
+.barcos-table .chk-th,
+.barcos-table .chk-td {
+  width: 36px;
+  min-width: 36px;
+  text-align: center;
+  padding: 8px 6px;
+}
+
+.barcos-table .chk-th input[type="checkbox"],
+.barcos-table .chk-td input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #1976d2;
 }
 
 .badge {

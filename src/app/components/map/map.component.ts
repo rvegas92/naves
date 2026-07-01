@@ -66,6 +66,9 @@ export class MapComponent implements OnInit {
   barcosEnTransito: number = 0;
   barcosEntregados: number = 0;
 
+  rutasPorBarco: { [contenedor: string]: { markers: any[], polyline: any } } = {};
+  barcosSeleccionados: Set<string> = new Set();
+
   showModal: boolean = false;
   selectedStat: any = null;
 
@@ -107,6 +110,8 @@ export class MapComponent implements OnInit {
   onDateChange(): void {
     this.markers = [];
     this.polylines = [];
+    this.rutasPorBarco = {};
+    this.barcosSeleccionados.clear();
     this.getContainer();
   }
 
@@ -121,6 +126,7 @@ export class MapComponent implements OnInit {
           this.totalBarcos = this.barcos.length;
           this.updateStats();
           this.generarBarcos(this.barcos);
+          this.selectAllBarcos();
         }
       }
     );
@@ -146,10 +152,15 @@ export class MapComponent implements OnInit {
   }
 
   getEstado(b: any): string {
-    const eta = this.parseEta(b.ETA);
-    if (!eta) return 'En Transito';
-    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    return eta >= hoy ? 'En Transito' : 'Entregado';
+    if (b.ESTADO === 'FU') return 'Pendiente';
+    if (b.ESTADO === 'PE') return 'En Transito';
+    if (b.ESTADO === 'FA') return 'Entregado';
+
+    // const eta = this.parseEta(b.ETA);
+    // if (!eta) return 'En Transito';
+    // const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    // return eta >= hoy ? 'En Transito' : 'Entregado';
+    return 'Sin estado';
   }
 
   getEstadoCounts(): { transito: number, entregado: number } {
@@ -219,12 +230,12 @@ export class MapComponent implements OnInit {
         shippingLine: e.lineanaviera,
         blContainersRef: e.booking
       };
-  
+
       const id = await this.mapService.obtenerRequestId(postcustom);
-  
+
       if (!!id) {
         const resp = await this.mapService.obtenerDataContainer({ authCode: environment.keyShipGo, requestId: id, mappoint: true });
-  
+
         if (!!resp && resp.length > 0 && resp[0]?.VesselLatitude && resp[0]?.VesselLongitude) {
           const geocoder = new google.maps.Geocoder();
           const shanghaiCoordinates = await this.geocodeAddress(geocoder, resp[0]?.Pod);
@@ -236,15 +247,16 @@ export class MapComponent implements OnInit {
             currentCoordinates,
             shanghaiCoordinates
           ];
-  
+
+          const barcoMarkers: any[] = [];
           locations.forEach((location, index) => {
             const marker = {
               position: location,
               label: (index + 1).toString()
             };
-            this.markers.push(marker);
+            barcoMarkers.push(marker);
           });
- 
+
           const poli = {
             path: [lima, currentCoordinates, shanghaiCoordinates],
             geodesic: true,
@@ -252,10 +264,71 @@ export class MapComponent implements OnInit {
             strokeOpacity: 0.5,
             strokeWeight: 0.5
           };
-          this.polylines.push(poli);
+
+          const key = e.contenedor || e.embarquenumero;
+          this.rutasPorBarco[key] = { markers: barcoMarkers, polyline: poli };
+          this.barcosSeleccionados.add(key);
         }
       }
     }
+    this.refreshMap();
+  }
+
+  refreshMap(): void {
+    this.markers = [];
+    this.polylines = [];
+    for (const key of this.barcosSeleccionados) {
+      const ruta = this.rutasPorBarco[key];
+      if (ruta) {
+        this.markers.push(...ruta.markers);
+        this.polylines.push(ruta.polyline);
+      }
+    }
+  }
+
+  isSelected(barco: any): boolean {
+    const key = barco.contenedor || barco.embarquenumero;
+    return this.barcosSeleccionados.has(key);
+  }
+
+  toggleBarco(barco: any): void {
+    const key = barco.contenedor || barco.embarquenumero;
+    if (this.barcosSeleccionados.has(key)) {
+      this.barcosSeleccionados.delete(key);
+    } else {
+      this.barcosSeleccionados.add(key);
+    }
+    this.refreshMap();
+  }
+
+  isAllSelected(): boolean {
+    const filtrados = this.getBarcosFiltrados();
+    if (!filtrados.length) return false;
+    return filtrados.every(b => this.isSelected(b));
+  }
+
+  selectAllBarcos(): void {
+    for (const b of this.barcos) {
+      const key = b.contenedor || b.embarquenumero;
+      this.barcosSeleccionados.add(key);
+    }
+    this.refreshMap();
+  }
+
+  toggleSelectAll(): void {
+    const filtrados = this.getBarcosFiltrados();
+    if (this.isAllSelected()) {
+      for (const b of filtrados) {
+        const key = b.contenedor || b.embarquenumero;
+        this.barcosSeleccionados.delete(key);
+      }
+    } else {
+      for (const b of filtrados) {
+        const key = b.contenedor || b.embarquenumero;
+        this.barcosSeleccionados.add(key);
+      }
+    }
+    this.refreshMap();
   }
 
   geocodeAddress(geocoder: any, address: string) {

@@ -71,6 +71,7 @@ export class MapComponent implements OnInit {
 
   showModal: boolean = false;
   selectedStat: any = null;
+  selectedEstadoFilter: string = 'transito';
 
   panelFiltrosOpen: boolean = true;
   panelEmbarquesOpen: boolean = true;
@@ -170,19 +171,29 @@ export class MapComponent implements OnInit {
 
   getEstadoCounts(): { transito: number, entregado: number } {
     let transito = 0, entregado = 0;
-    for (const b of this.getBarcosFiltrados()) {
+    for (const b of this.barcos) {
       const estado = this.getEstado(b);
-      if (estado === 'En Transito') transito++;
-      else entregado++;
+      if (estado === 'En Transito' || estado === 'Pendiente') {
+        transito++;
+      } else if (estado === 'Entregado') {
+        entregado++;
+      }
     }
     return { transito, entregado };
   }
 
   openModal(stat: any): void {
     this.selectedStat = stat;
+    this.selectedEstadoFilter = 'transito';
     this.currentPage = 1;
     this.calcTotalPages();
     this.showModal = true;
+  }
+
+  selectEstadoFilter(estado: string): void {
+    this.selectedEstadoFilter = estado;
+    this.currentPage = 1;
+    this.calcTotalPages();
   }
 
   closeModal(): void {
@@ -212,7 +223,19 @@ export class MapComponent implements OnInit {
 
   getBarcosFiltrados(): any[] {
     if (!this.selectedStat) return [];
-    return this.barcos;
+    return this.barcos.filter((b: any) => {
+      const estado = this.getEstado(b);
+      if (this.selectedEstadoFilter === 'transito') {
+        return estado === 'En Transito' || estado === 'Pendiente';
+      } else if (this.selectedEstadoFilter === 'entregado') {
+        return estado === 'Entregado';
+      }
+      return true;
+    });
+  }
+
+  isBarcoEntregado(b: any): boolean {
+    return this.getEstado(b) === 'Entregado';
   }
 
   getPageRange(): number[] {

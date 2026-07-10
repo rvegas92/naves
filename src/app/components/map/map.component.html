@@ -90,11 +90,11 @@
     </div>
     <div class="modal-body">
       <div class="modal-stats-row">
-        <div class="stat-box transito">
+        <div class="stat-box transito" [class.active]="selectedEstadoFilter === 'transito'" (click)="selectEstadoFilter('transito')">
           <span class="stat-count">{{ getEstadoCounts().transito }}</span>
           <span class="stat-name">En Transito</span>
         </div>
-        <div class="stat-box entregado">
+        <div class="stat-box entregado" [class.active]="selectedEstadoFilter === 'entregado'" (click)="selectEstadoFilter('entregado')">
           <span class="stat-count">{{ getEstadoCounts().entregado }}</span>
           <span class="stat-name">Entregado</span>
         </div>
@@ -106,9 +106,10 @@
         <table>
           <thead>
             <tr>
-              <th class="chk-th">
+              <th class="chk-th" *ngIf="selectedEstadoFilter !== 'entregado'">
                 <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll()" />
               </th>
+              <th class="chk-th" *ngIf="selectedEstadoFilter === 'entregado'"></th>
               <th>RUC</th>
               <th>Empresa</th>
               <th>Embarque</th>
@@ -121,8 +122,10 @@
           </thead>
           <tbody>
             <tr *ngFor="let b of getPaginatedBarcos()" [class.row-selected]="isSelected(b)">
-              <td class="chk-td">
+              <td class="chk-td" *ngIf="selectedEstadoFilter !== 'entregado'">
                 <input type="checkbox" [checked]="isSelected(b)" (change)="toggleBarco(b)" />
+              </td>
+              <td class="chk-td" *ngIf="selectedEstadoFilter === 'entregado'">
               </td>
               <td>{{ b.ruc }}</td>
               <td>{{ b.razonsocial }}</td>

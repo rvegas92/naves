@@ -386,14 +386,43 @@
   padding: 12px;
   border-radius: 8px;
   background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-box.transito {
   background: #fff3e0;
 }
 
+.stat-box.transito:hover {
+  background: #ffe0b2;
+}
+
+.stat-box.transito.active {
+  background: #ffcc80;
+  border-color: #ff9800;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
 .stat-box.entregado {
   background: #e8f5e9;
+}
+
+.stat-box.entregado:hover {
+  background: #c8e6c9;
+}
+
+.stat-box.entregado.active {
+  background: #a5d6a7;
+  border-color: #4caf50;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 .stat-count {

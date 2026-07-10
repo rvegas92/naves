@@ -79,6 +79,10 @@ export class MapComponent implements OnInit {
   currentPage: number = 1;
   totalPages: number = 1;
 
+  isLoadingRoutes: boolean = false;
+  routesProcessed: number = 0;
+  totalRoutesToProcess: number = 0;
+
   dashboardStats = [
     { title: 'Total de Barcos', value: 0, icon: 'ship', color: '#1976d2', key: 'total' },
     { title: 'Peso Bruto (kg)', value: 0, icon: 'weight', color: '#ff9800', key: 'pesobruto' },
@@ -224,16 +228,16 @@ export class MapComponent implements OnInit {
   }
 
   async dibujarBarcos(barcos: any) {
-    for (const e of barcos) {
-      if (!e.lineanaviera || !e.booking) {
-        continue;
-      }
-
+    const barcosEnRuta = barcos.filter((e: any) => {
       const estado = e.estado || e.ESTADO;
-      if (estado === 'FA') {
-        continue;
-      }
+      return e.lineanaviera && e.booking && estado !== 'FA';
+    });
 
+    this.totalRoutesToProcess = barcosEnRuta.length;
+    this.routesProcessed = 0;
+    this.isLoadingRoutes = this.totalRoutesToProcess > 0;
+
+    for (const e of barcosEnRuta) {
       const postcustom = {
         authCode: environment.keyShipGo,
         containerNumber: e.contenedor || '',
@@ -280,8 +284,12 @@ export class MapComponent implements OnInit {
           this.barcosSeleccionados.add(key);
         }
       }
+
+      this.routesProcessed++;
+      this.refreshMap();
     }
-    this.refreshMap();
+
+    this.isLoadingRoutes = false;
   }
 
   refreshMap(): void {

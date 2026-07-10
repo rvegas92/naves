@@ -12,11 +12,11 @@
       </div>
       <div class="panel-body" *ngIf="panelFiltrosOpen">
         <div class="date-row">
-          <label>F. Embarque</label>
+          <label>Desde F.Embarque</label>
           <input type="date" [(ngModel)]="fechaDesde" />
         </div>
         <div class="date-row">
-          <label>F. Llegada</label>
+          <label>Hasta F.Embarque</label>
           <input type="date" [(ngModel)]="fechaHasta" />
         </div>
         <button class="btn-listar" (click)="onDateChange()">

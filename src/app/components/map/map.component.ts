@@ -152,9 +152,10 @@ export class MapComponent implements OnInit {
   }
 
   getEstado(b: any): string {
-    if (b.ESTADO === 'FU') return 'Pendiente';
-    if (b.ESTADO === 'PE') return 'En Transito';
-    if (b.ESTADO === 'FA') return 'Entregado';
+    const estado = b.estado || b.ESTADO;
+    if (estado === 'FU') return 'Pendiente';
+    if (estado === 'PE') return 'En Transito';
+    if (estado === 'FA') return 'Entregado';
 
     // const eta = this.parseEta(b.ETA);
     // if (!eta) return 'En Transito';
@@ -224,9 +225,18 @@ export class MapComponent implements OnInit {
 
   async dibujarBarcos(barcos: any) {
     for (const e of barcos) {
+      if (!e.lineanaviera || !e.booking) {
+        continue;
+      }
+
+      const estado = e.estado || e.ESTADO;
+      if (estado === 'FA') {
+        continue;
+      }
+
       const postcustom = {
         authCode: environment.keyShipGo,
-        containerNumber: e.contenedor,
+        containerNumber: e.contenedor || '',
         shippingLine: e.lineanaviera,
         blContainersRef: e.booking
       };

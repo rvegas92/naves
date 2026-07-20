@@ -92,7 +92,7 @@
       <div class="modal-stats-row">
         <div class="stat-box transito" [class.active]="selectedEstadoFilter === 'transito'" (click)="selectEstadoFilter('transito')">
           <span class="stat-count">{{ getEstadoCounts().transito }}</span>
-          <span class="stat-name">En Transito</span>
+          <span class="stat-name">Sin entregar</span>
         </div>
         <div class="stat-box entregado" [class.active]="selectedEstadoFilter === 'entregado'" (click)="selectEstadoFilter('entregado')">
           <span class="stat-count">{{ getEstadoCounts().entregado }}</span>
@@ -115,6 +115,7 @@
               <th>Embarque</th>
               <th>Navio</th>
               <th>Destino</th>
+              <th>ETD</th>
               <th>ETA</th>
               <th>Estado</th>
               <th>Peso</th>
@@ -132,6 +133,7 @@
               <td>{{ b.embarquenumero }}</td>
               <td>{{ b.navenombre }}</td>
               <td>{{ b.destino }}</td>
+              <td>{{ b.ETD | slice:6:8 }}/{{ b.ETD | slice:4:6 }}/{{ b.ETD | slice:0:4 }}</td>
               <td>{{ b.ETA | slice:6:8 }}/{{ b.ETA | slice:4:6 }}/{{ b.ETA | slice:0:4 }}</td>
               <td>
                 <span class="badge" [class.transito]="getEstado(b) === 'En Transito'" [class.entregado]="getEstado(b) === 'Entregado'" [class.pendiente]="getEstado(b) === 'Pendiente'">

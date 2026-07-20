@@ -73,7 +73,7 @@ export class MapComponent implements OnInit {
   selectedStat: any = null;
   selectedEstadoFilter: string = 'transito';
 
-  panelFiltrosOpen: boolean = true;
+  panelFiltrosOpen: boolean = false;
   panelEmbarquesOpen: boolean = true;
 
   pageSize: number = 20;
@@ -268,44 +268,56 @@ export class MapComponent implements OnInit {
         blContainersRef: e.booking
       };
 
-      const id = await this.mapService.obtenerRequestId(postcustom);
+      try {
+        const id = await this.mapService.obtenerRequestId(postcustom);
 
-      if (!!id) {
-        const resp = await this.mapService.obtenerDataContainer({ authCode: environment.keyShipGo, requestId: id, mappoint: true });
+        if (!!id) {
+          const resp = await this.mapService.obtenerDataContainer({ authCode: environment.keyShipGo, requestId: id, mappoint: true });
 
-        if (!!resp && resp.length > 0 && resp[0]?.VesselLatitude && resp[0]?.VesselLongitude) {
-          const geocoder = new google.maps.Geocoder();
-          const shanghaiCoordinates = await this.geocodeAddress(geocoder, resp[0]?.Pod);
-          const lima = { lat: -12.0464, lng: -77.1187 };
-          const currentCoordinates = { lat: resp[0]?.VesselLatitude, lng: resp[0]?.VesselLongitude };
+          if (!!resp && resp.length > 0 && resp[0]?.VesselLatitude && resp[0]?.VesselLongitude) {
+            const geocoder = new google.maps.Geocoder();
+            const podAddress = resp[0]?.Pod;
+            
+            if (!podAddress || podAddress.trim() === '') {
+              console.warn(`Dirección POD vacía para contenedor ${e.contenedor}`);
+              this.routesProcessed++;
+              continue;
+            }
 
-          const locations = [
-            lima,
-            currentCoordinates,
-            shanghaiCoordinates
-          ];
+            const shanghaiCoordinates = await this.geocodeAddress(geocoder, podAddress);
+            const lima = { lat: -12.0464, lng: -77.1187 };
+            const currentCoordinates = { lat: resp[0]?.VesselLatitude, lng: resp[0]?.VesselLongitude };
 
-          const barcoMarkers: any[] = [];
-          locations.forEach((location, index) => {
-            const marker = {
-              position: location,
-              label: (index + 1).toString()
+            const locations = [
+              lima,
+              currentCoordinates,
+              shanghaiCoordinates
+            ];
+
+            const barcoMarkers: any[] = [];
+            locations.forEach((location, index) => {
+              const marker = {
+                position: location,
+                label: (index + 1).toString()
+              };
+              barcoMarkers.push(marker);
+            });
+
+            const poli = {
+              path: [lima, currentCoordinates, shanghaiCoordinates],
+              geodesic: true,
+              strokeColor: 'blue',
+              strokeOpacity: 0.5,
+              strokeWeight: 0.5
             };
-            barcoMarkers.push(marker);
-          });
 
-          const poli = {
-            path: [lima, currentCoordinates, shanghaiCoordinates],
-            geodesic: true,
-            strokeColor: 'blue',
-            strokeOpacity: 0.5,
-            strokeWeight: 0.5
-          };
-
-          const key = e.contenedor || e.embarquenumero;
-          this.rutasPorBarco[key] = { markers: barcoMarkers, polyline: poli };
-          this.barcosSeleccionados.add(key);
+            const key = e.contenedor || e.embarquenumero;
+            this.rutasPorBarco[key] = { markers: barcoMarkers, polyline: poli };
+            this.barcosSeleccionados.add(key);
+          }
         }
+      } catch (error) {
+        console.error(`Error procesando contenedor ${e.contenedor}:`, error);
       }
 
       this.routesProcessed++;
@@ -374,15 +386,21 @@ export class MapComponent implements OnInit {
 
   geocodeAddress(geocoder: any, address: string) {
     return new Promise<{ lat: number, lng: number }>((resolve, reject) => {
+      if (!address || address.trim() === '') {
+        reject("INVALID_REQUEST");
+        return;
+      }
+
       geocoder.geocode({ address: address }, (results: any, status: any) => {
-        if (status === "OK") {
+        if (status === "OK" && results && results.length > 0) {
           const location = results[0].geometry.location;
           resolve({
             lat: location.lat(),
             lng: location.lng()
           });
         } else {
-          reject("Geocoding falló por: " + status);
+          console.warn(`Geocoding falló para "${address}": ${status}`);
+          reject(`GEOCODING_FAILED: ${status}`);
         }
       });
     });
